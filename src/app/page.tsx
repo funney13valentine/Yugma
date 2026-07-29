@@ -1,65 +1,368 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Shield, Lock, EyeOff, UserX } from 'lucide-react';
+import LineWaves from '@/components/LineWaves';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
+  const router = useRouter();
+  const [animated, setAnimated] = useState(false);
+  const cardRef = useRef(null);
+
+  // Check if user is already logged in and redirect to dashboard
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.push('/dashboard');
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setAnimated(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="w-full bg-[#000000] min-h-screen" style={{ margin: 0, padding: 0, border: 'none' }}>
+      {/* 1. LineWaves Background (Fixed for full page) */}
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+        <LineWaves
+          color1="#ffffff"
+          color2="#ffffff"
+          color3="#ffffff"
+          brightness={0.18}
+          speed={0.25}
+          warpIntensity={1.2}
+          rotation={-45}
+          enableMouseInteraction={true}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+      </div>
+
+      {/* 2. Dark Overlay (Fixed for full page) */}
+      <div className="fixed inset-0 bg-[#000000]/55 z-10 pointer-events-none" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }} />
+
+      {/* SECTION 1 — HERO (full 100vh) */}
+      <div className="relative w-full h-[100vh] overflow-hidden bg-transparent z-20" style={{ margin: 0, padding: 0, border: 'none' }}>
+        {/* 3. Center content */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 20,
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          {/* युग्म plain text */}
+          <h1
+            style={{
+              fontFamily: 'var(--font-noto-serif-devanagari), Noto Serif Devanagari, serif',
+              fontSize: 'clamp(72px, 15vw, 140px)',
+              fontWeight: 700,
+              color: 'white',
+              lineHeight: 1.1,
+              background: 'linear-gradient(135deg, #e8e8e8 0%, #ffffff 25%, #a0a0a0 50%, #ffffff 75%, #c8c8c8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            युग्म
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+          {/* "YUGMA" below it */}
+          <div
+            style={{
+              fontSize: '16px',
+              color: 'rgba(255, 255, 255, 0.4)',
+              letterSpacing: '0.35em',
+              marginTop: '16px',
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            YUGMA
+          </div>
+
+          {/* ChevronDown below that */}
+          <div style={{ marginTop: '24px' }}>
+            <ChevronDown
+              size={24}
+              color="rgba(255, 255, 255, 0.3)"
+              style={{
+                color: 'rgba(255, 255, 255, 0.3)',
+                animation: 'bounce 2s infinite',
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* SECTION 2 — TRUST SECTION */}
+      <section
+        style={{
+          background: 'transparent',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '48px 24px',
+          margin: 0,
+          border: 'none',
+          position: 'relative',
+          zIndex: 20,
+        }}
+      >
+        <div
+          ref={cardRef}
+          style={{
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '48px 32px',
+            maxWidth: '460px',
+            width: '90%',
+          }}
+        >
+          {/* Small label at top */}
+          <div
+            style={{
+              fontSize: '11px',
+              letterSpacing: '0.2em',
+              color: 'rgba(255, 255, 255, 0.4)',
+              textAlign: 'center',
+              marginBottom: '36px',
+              fontWeight: 700,
+            }}
+          >
+            BEFORE YOU BEGIN
+          </div>
+
+          {/* 4 Trust Points */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            {/* Point 1 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'flex-start',
+                opacity: animated ? 1 : 0,
+                transform: animated ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+                transitionDelay: '0ms',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Shield size={18} color="rgba(255, 255, 255, 0.7)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>
+                  PPSU students only
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', lineHeight: 1.6, margin: '4px 0 0 0' }}>
+                  Every account verified with your official college email. No outsiders, ever.
+                </p>
+              </div>
+            </div>
+
+            {/* Point 2 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'flex-start',
+                opacity: animated ? 1 : 0,
+                transform: animated ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+                transitionDelay: '150ms',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Lock size={18} color="rgba(255, 255, 255, 0.7)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>
+                  Your photos stay private
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', lineHeight: 1.6, margin: '4px 0 0 0' }}>
+                  Profiles are only visible to verified students. Nobody else.
+                </p>
+              </div>
+            </div>
+
+            {/* Point 3 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'flex-start',
+                opacity: animated ? 1 : 0,
+                transform: animated ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+                transitionDelay: '300ms',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <EyeOff size={18} color="rgba(255, 255, 255, 0.7)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>
+                  We don&apos;t sell your data
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', lineHeight: 1.6, margin: '4px 0 0 0' }}>
+                  No ads, no third parties. Your information never leaves this app.
+                </p>
+              </div>
+            </div>
+
+            {/* Point 4 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'flex-start',
+                opacity: animated ? 1 : 0,
+                transform: animated ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+                transitionDelay: '450ms',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <UserX size={18} color="rgba(255, 255, 255, 0.7)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'white', margin: 0 }}>
+                  You&apos;re in control
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', lineHeight: 1.6, margin: '4px 0 0 0' }}>
+                  Unmatch, report, or delete your account anytime. Instantly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div
+            style={{
+              marginTop: '36px',
+              fontSize: '11px',
+              color: 'rgba(255, 255, 255, 0.25)',
+              textAlign: 'center',
+              lineHeight: '1.7',
+            }}
+          >
+            This is an unofficial app for PPSU students only. We are not affiliated with PP Savani University.
+          </div>
+
+          {/* Buttons */}
+          <div
+            style={{
+              marginTop: '28px',
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+            }}
+          >
+            <button
+              onClick={() => router.push('/auth/signup')}
+              style={{
+                background: '#ffffff',
+                color: '#000000',
+                borderRadius: '30px',
+                padding: '13px 24px',
+                fontSize: '14px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              I understand, let&apos;s go →
+            </button>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: 'rgba(255, 255, 255, 0.6)',
+                borderRadius: '30px',
+                padding: '13px 24px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                fontWeight: 500,
+              }}
+            >
+              No thanks
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
