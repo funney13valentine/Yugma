@@ -1,8 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@700&display=swap');
 @import "tailwindcss";
 
 :root {
   --background: #000000;
   --foreground: #ffffff;
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: monospace;
+  --font-noto-serif-devanagari: 'Noto Serif Devanagari', serif;
 }
 
 @theme inline {
