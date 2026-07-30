@@ -165,7 +165,6 @@ export default function ProfileSetupPage() {
         gender,
         bio,
         photos: uploadedUrls,
-        updated_at: new Date().toISOString(),
       });
 
       if (error) {
