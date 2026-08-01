@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Heart, X, Star } from 'lucide-react'
 import LineWaves from '@/components/LineWaves'
 import supabase from '@/lib/supabase'
+import BottomNav from '@/components/BottomNav'
 
 interface Profile {
   id: string
@@ -175,7 +176,8 @@ export default function Dashboard() {
       display: 'flex',
       flexDirection: 'column',
       overflowX: 'hidden',
-      fontFamily: 'Inter, sans-serif'
+      fontFamily: 'Inter, sans-serif',
+      paddingBottom: '80px'
     }}>
       {/* LineWaves Background Wrapper */}
       <div style={{
@@ -373,7 +375,7 @@ export default function Dashboard() {
                 width: '68px',
                 height: '68px',
                 borderRadius: '50%',
-                background: '#6366f1',
+                background: 'rgba(239, 68, 68, 0.15)',
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -381,18 +383,18 @@ export default function Dashboard() {
                 cursor: 'pointer',
                 outline: 'none',
                 transition: 'transform 0.2s, background-color 0.2s',
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.2)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'scale(1.05)'
-                e.currentTarget.style.backgroundColor = '#4f46e5'
+                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.backgroundColor = '#6366f1'
+                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'
               }}
             >
-              <Heart size={30} color="white" fill="white" />
+              <Heart size={30} color="#ef4444" fill="#ef4444" />
             </button>
 
             {/* Star Button */}
@@ -533,6 +535,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      <BottomNav />
     </div>
   )
 }

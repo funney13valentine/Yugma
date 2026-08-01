@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Heart, Send } from 'lucide-react'
 import LineWaves from '@/components/LineWaves'
 import supabase from '@/lib/supabase'
+import BottomNav from '@/components/BottomNav'
 
 interface Profile {
   id: string
@@ -589,6 +590,7 @@ export default function ChatPage() {
           <Send size={18} color="white" />
         </button>
       </div>
+      <BottomNav />
     </div>
   )
 }

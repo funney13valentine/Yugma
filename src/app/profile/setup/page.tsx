@@ -157,6 +157,8 @@ export default function ProfileSetupPage() {
         uploadedUrls.push(data.secure_url);
       }
 
+      const tempPhoto = typeof window !== 'undefined' ? sessionStorage.getItem('temp_profile_photo') : null;
+
       // 2. Save profile info in Supabase
       const { error } = await supabase.from('profiles').insert({
         id: userId,
@@ -165,12 +167,16 @@ export default function ProfileSetupPage() {
         gender,
         bio,
         photos: uploadedUrls,
+        profile_photo: tempPhoto || null,
       });
 
       if (error) {
         throw new Error(error.message);
       }
 
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('temp_profile_photo');
+      }
       router.push('/dashboard');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Plus } from 'lucide-react';
 import LineWaves from '@/components/LineWaves';
 import { isPPSUEmail } from '@/utils/validateEmail';
 import { signUp } from '@/lib/auth';
@@ -28,6 +28,19 @@ export default function SignupPage() {
 
   // Submitting state
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Profile photo states
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePhotoFile(file);
+      setProfilePhotoPreview(URL.createObjectURL(file));
+    }
+  };
 
   // Form validations on Blur
   const handleEmailBlur = () => {
@@ -105,10 +118,42 @@ export default function SignupPage() {
     setSubmitError('');
 
     try {
+      let uploadedProfilePhotoUrl = '';
+      if (profilePhotoFile) {
+        const formData = new FormData();
+        formData.append('file', profilePhotoFile);
+        formData.append(
+          'upload_preset',
+          process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'yugma_uploads'
+        );
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${
+            process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'ngt1g6gu'
+          }/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error('Failed to upload profile photo to Cloudinary.');
+        }
+
+        const data = await res.json();
+        uploadedProfilePhotoUrl = data.secure_url;
+      }
+
       const { error } = await signUp(email, password);
       if (error) {
         setSubmitError(error.message);
       } else {
+        if (uploadedProfilePhotoUrl) {
+          sessionStorage.setItem('temp_profile_photo', uploadedProfilePhotoUrl);
+        } else {
+          sessionStorage.removeItem('temp_profile_photo');
+        }
         router.push('/profile/setup');
       }
     } catch (err) {
@@ -320,6 +365,49 @@ export default function SignupPage() {
                   {confirmPasswordError}
                 </div>
               )}
+            </div>
+
+            {/* Profile Photo Upload Step */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '4px', marginBottom: '4px' }}>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+                Profile Photo (Optional)
+              </div>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  border: '2px dashed rgba(255,255,255,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: 'rgba(255,255,255,0.03)'
+                }}
+              >
+                {profilePhotoPreview ? (
+                  <img
+                    src={profilePhotoPreview}
+                    alt="Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Plus size={20} color="rgba(255,255,255,0.4)" />
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                {profilePhotoFile ? 'Photo selected' : 'Tap to upload'}
+              </div>
             </div>
 
             {/* Submit Button */}

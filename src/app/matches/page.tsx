@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Heart } from 'lucide-react'
 import LineWaves from '@/components/LineWaves'
 import supabase from '@/lib/supabase'
+import BottomNav from '@/components/BottomNav'
 
 interface Profile {
   id: string
@@ -117,7 +118,8 @@ export default function MatchesPage() {
       display: 'flex',
       flexDirection: 'column',
       overflowX: 'hidden',
-      fontFamily: 'Inter, sans-serif'
+      fontFamily: 'Inter, sans-serif',
+      paddingBottom: '80px'
     }}>
       {/* LineWaves Background Wrapper */}
       <div style={{
@@ -294,6 +296,7 @@ export default function MatchesPage() {
           </div>
         </div>
       )}
+      <BottomNav />
     </div>
   )
 }
