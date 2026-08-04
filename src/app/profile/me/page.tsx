@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Pencil } from 'lucide-react'
+import { Camera, Pencil, Plus, X } from 'lucide-react'
 import LineWaves from '@/components/LineWaves'
 import supabase from '@/lib/supabase'
 import BottomNav from '@/components/BottomNav'
@@ -30,6 +30,145 @@ export default function ProfileMePage() {
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  // Photo upload modal state
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [modalPhotos, setModalPhotos] = useState<(File | null)[]>([null, null, null])
+  const [modalPreviews, setModalPreviews] = useState<(string | null)[]>([null, null, null])
+  const [isSavingPhotos, setIsSavingPhotos] = useState(false)
+  const [savePhotosError, setSavePhotosError] = useState('')
+
+  // File input refs for photo slots
+  const modalFileInputRef0 = useRef<HTMLInputElement>(null)
+  const modalFileInputRef1 = useRef<HTMLInputElement>(null)
+  const modalFileInputRef2 = useRef<HTMLInputElement>(null)
+  const modalFileInputRefs = [modalFileInputRef0, modalFileInputRef1, modalFileInputRef2]
+
+  // Initialize previews from existing profile photos when modal opens
+  useEffect(() => {
+    if (showUploadModal && profile) {
+      const initialPreviews = [
+        profile.photos?.[0] || null,
+        profile.photos?.[1] || null,
+        profile.photos?.[2] || null
+      ]
+      setModalPreviews(initialPreviews)
+      setModalPhotos([null, null, null]) // Reset files
+    }
+  }, [showUploadModal, profile])
+
+  // Open modal if upload parameter is present
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('upload') === 'true') {
+        setShowUploadModal(true)
+        // Clean up URL parameter to avoid re-opening on fresh refresh
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [])
+
+  const handleModalSlotClick = (index: number) => {
+    modalFileInputRefs[index].current?.click()
+  }
+
+  const handleModalFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const newPhotos = [...modalPhotos]
+      newPhotos[index] = file
+      setModalPhotos(newPhotos)
+
+      const newPreviews = [...modalPreviews]
+      newPreviews[index] = URL.createObjectURL(file)
+      setModalPreviews(newPreviews)
+    }
+  }
+
+  const handleModalRemovePhoto = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newPhotos = [...modalPhotos]
+    newPhotos[index] = null
+    setModalPhotos(newPhotos)
+
+    const currentPreview = modalPreviews[index]
+    if (currentPreview && currentPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(currentPreview)
+    }
+    const newPreviews = [...modalPreviews]
+    newPreviews[index] = null
+    setModalPreviews(newPreviews)
+
+    if (modalFileInputRefs[index].current) {
+      modalFileInputRefs[index].current.value = ''
+    }
+  }
+
+  const handleSavePhotos = async () => {
+    if (!currentUser) return
+    setIsSavingPhotos(true)
+    setSavePhotosError('')
+
+    try {
+      const uploadedUrls: string[] = []
+      for (let i = 0; i < 3; i++) {
+        const file = modalPhotos[i]
+        const existingUrl = modalPreviews[i]
+
+        if (file) {
+          // Upload to Cloudinary
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append(
+            'upload_preset',
+            process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'yugma_uploads'
+          )
+
+          const res = await fetch(
+            `https://api.cloudinary.com/v1_1/${
+              process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'ngt1g6gu'
+            }/image/upload`,
+            {
+              method: 'POST',
+              body: formData,
+            }
+          )
+
+          if (!res.ok) {
+            throw new Error(`Failed to upload photo ${i + 1} to Cloudinary.`)
+          }
+
+          const data = await res.json()
+          uploadedUrls.push(data.secure_url)
+        } else if (existingUrl && !existingUrl.startsWith('blob:')) {
+          uploadedUrls.push(existingUrl)
+        }
+      }
+
+      if (uploadedUrls.length === 0) {
+        throw new Error('Please add at least one photo.')
+      }
+
+      // Update profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ photos: uploadedUrls })
+        .eq('id', currentUser.id)
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      setProfile((prev) => (prev ? { ...prev, photos: uploadedUrls } : null))
+      setShowUploadModal(false)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred.'
+      setSavePhotosError(errorMsg)
+    } finally {
+      setIsSavingPhotos(false)
+    }
+  }
 
   // Calculate age based on birthdate string (YYYY-MM-DD)
   const calculateAge = (dobString: string) => {
@@ -532,7 +671,218 @@ export default function ProfileMePage() {
         )}
       </div>
 
-      <BottomNav />
+      {/* Hidden file inputs for modal */}
+      <input
+        type="file"
+        ref={modalFileInputRef0}
+        onChange={(e) => handleModalFileChange(0, e)}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={modalFileInputRef1}
+        onChange={(e) => handleModalFileChange(1, e)}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={modalFileInputRef2}
+        onChange={(e) => handleModalFileChange(2, e)}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+
+      {/* Photo upload modal */}
+      {showUploadModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.85)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {/* White card */}
+          <div style={{
+            background: 'rgba(0,0,0,0.9)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '24px',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '90%',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box'
+          }}>
+            {/* X close button top right */}
+            <button
+              onClick={() => setShowUploadModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'rgba(255,255,255,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Title */}
+            <h3 style={{
+              margin: '0 0 24px 0',
+              color: '#ffffff',
+              fontSize: '18px',
+              fontWeight: 600,
+              textAlign: 'center'
+            }}>
+              Edit Photos
+            </h3>
+
+            {/* 3 Upload slots in a row */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', marginBottom: '24px' }}>
+              {[0, 1, 2].map((idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleModalSlotClick(idx)}
+                  style={{
+                    flex: 1,
+                    aspectRatio: '1/1',
+                    border: '2px dashed rgba(255,255,255,0.2)',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.04)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {modalPreviews[idx] ? (
+                    <>
+                      <img
+                        src={modalPreviews[idx]!}
+                        alt={`Preview ${idx + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => handleModalRemovePhoto(idx, e)}
+                        style={{
+                          position: 'absolute',
+                          top: '6px',
+                          right: '6px',
+                          width: '20px',
+                          height: '20px',
+                          background: '#ffffff',
+                          borderRadius: '50%',
+                          border: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                          zIndex: 10
+                        }}
+                      >
+                        <X size={12} color="#000000" />
+                      </button>
+                    </>
+                  ) : (
+                    <Plus size={24} color="#ffffff" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Error message */}
+            {savePhotosError && (
+              <div style={{
+                color: '#ef4444',
+                fontSize: '13px',
+                textAlign: 'center',
+                marginBottom: '16px'
+              }}>
+                {savePhotosError}
+              </div>
+            )}
+
+            {/* Save Button */}
+            <button
+              onClick={handleSavePhotos}
+              disabled={isSavingPhotos}
+              style={{
+                width: '100%',
+                background: '#6366f1',
+                color: '#ffffff',
+                borderRadius: '30px',
+                padding: '14px',
+                fontSize: '14px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: isSavingPhotos ? 'not-allowed' : 'pointer',
+                opacity: isSavingPhotos ? 0.7 : 1,
+                marginTop: '16px',
+                transition: 'background-color 0.2s',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                if (!isSavingPhotos) e.currentTarget.style.backgroundColor = '#4f46e5'
+              }}
+              onMouseLeave={(e) => {
+                if (!isSavingPhotos) e.currentTarget.style.backgroundColor = '#6366f1'
+              }}
+            >
+              {isSavingPhotos ? 'Saving...' : 'Save'}
+            </button>
+
+            {/* Cancel Button */}
+            <button
+              onClick={() => setShowUploadModal(false)}
+              disabled={isSavingPhotos}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.4)',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: isSavingPhotos ? 'not-allowed' : 'pointer',
+                marginTop: '12px',
+                padding: '8px 0',
+                transition: 'color 0.2s',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                if (!isSavingPhotos) e.currentTarget.style.color = '#ffffff'
+              }}
+              onMouseLeave={(e) => {
+                if (!isSavingPhotos) e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <BottomNav onPlusClick={() => setShowUploadModal(true)} />
     </div>
   )
 }

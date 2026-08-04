@@ -43,6 +43,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isMatchExpired, setIsMatchExpired] = useState(false)
+
+  // Profile overlay state
+  const [showProfile, setShowProfile] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [showReport, setShowReport] = useState(false)
+  const [reportReason, setReportReason] = useState<string|null>(null)
+  const [reportSubmitted, setReportSubmitted] = useState(false)
   
   // Timer States
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null)
@@ -433,19 +440,25 @@ export default function ChatPage() {
         <img
           src={otherPhotoUrl}
           alt={otherProfile?.name || 'Partner'}
+          onClick={() => setShowProfile(true)}
           style={{
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            cursor: 'pointer'
           }}
         />
-        <div style={{
-          color: 'white',
-          fontSize: '16px',
-          fontWeight: 600,
-          flex: 1
-        }}>
+        <div
+          onClick={() => setShowProfile(true)}
+          style={{
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: 600,
+            flex: 1,
+            cursor: 'pointer'
+          }}
+        >
           {otherProfile?.name}
         </div>
         {timeRemaining && (
@@ -590,6 +603,162 @@ export default function ChatPage() {
           <Send size={18} color="white" />
         </button>
       </div>
+      
+
+      {/* Full profile overlay */}
+      {showProfile && otherProfile && (
+        <div style={{position:'fixed',inset:0,zIndex:999,background:'#0a0a0a',overflowY:'auto',fontFamily:'Inter,sans-serif'}}>
+          
+          {/* Close button */}
+          <div style={{position:'fixed',top:16,right:16,zIndex:1000,display:'flex',gap:8}}>
+            <button 
+              onClick={() => setShowReport(true)}
+              style={{width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.6)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)',color:'white',fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}
+            >🚩</button>
+            <button 
+              onClick={() => { setShowProfile(false); setPhotoIndex(0); }}
+              style={{width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.6)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)',color:'white',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}
+            >✕</button>
+          </div>
+
+          {/* HERO PHOTO - full width, tall */}
+          <div style={{width:'100%',height:'65vh',position:'relative',overflow:'hidden'}}>
+            <img 
+              src={otherProfile.photos && otherProfile.photos[photoIndex] ? otherProfile.photos[photoIndex] : '/placeholder.jpg'} 
+              alt={otherProfile.name}
+              style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}} 
+            />
+            {/* Bottom gradient */}
+            <div style={{position:'absolute',bottom:0,left:0,right:0,height:'50%',background:'linear-gradient(transparent,#0a0a0a)'}} />
+            
+            {/* Name overlay on photo */}
+            <div style={{position:'absolute',bottom:20,left:20,right:20}}>
+              <div style={{fontSize:28,fontWeight:700,color:'white',textShadow:'0 2px 8px rgba(0,0,0,0.8)'}}>
+                {otherProfile.name}, {new Date().getFullYear() - new Date(otherProfile.birthdate).getFullYear()}
+              </div>
+              <div style={{fontSize:14,color:'rgba(255,255,255,0.7)',marginTop:4}}>{otherProfile.gender}</div>
+            </div>
+
+            {/* Photo navigation dots */}
+            {otherProfile.photos && otherProfile.photos.length > 1 && (
+              <div style={{position:'absolute',top:12,left:12,right:12,display:'flex',gap:4}}>
+                {otherProfile.photos.map((_,i) => (
+                  <div key={i} onClick={() => setPhotoIndex(i)} style={{flex:1,height:3,borderRadius:2,background:i===photoIndex?'white':'rgba(255,255,255,0.35)',cursor:'pointer',transition:'background 0.2s'}} />
+                ))}
+              </div>
+            )}
+
+            {/* Left/Right tap zones */}
+            {photoIndex > 0 && (
+              <div onClick={() => setPhotoIndex(p=>p-1)} style={{position:'absolute',left:0,top:0,bottom:0,width:'40%',cursor:'pointer'}} />
+            )}
+            {otherProfile.photos && photoIndex < otherProfile.photos.length-1 && (
+              <div onClick={() => setPhotoIndex(p=>p+1)} style={{position:'absolute',right:0,top:0,bottom:0,width:'40%',cursor:'pointer'}} />
+            )}
+          </div>
+
+          {/* ABOUT SECTION */}
+          {otherProfile.bio && (
+            <div style={{margin:'16px 16px 0',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:16,padding:16}}>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:8,letterSpacing:'0.05em',textTransform:'uppercase'}}>About</div>
+              <div style={{fontSize:15,color:'rgba(255,255,255,0.85)',lineHeight:1.6}}>{otherProfile.bio}</div>
+            </div>
+          )}
+
+          {/* ALL PHOTOS GRID */}
+          {otherProfile.photos && otherProfile.photos.length > 1 && (
+            <div style={{margin:'12px 16px 0',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:16,padding:16}}>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:12,letterSpacing:'0.05em',textTransform:'uppercase'}}>Photos</div>
+              <div style={{display:'flex',gap:8}}>
+                {otherProfile.photos.slice(0,3).map((photo,i) => (
+                  <img key={i} src={photo} onClick={() => setPhotoIndex(i)} alt={`photo ${i+1}`} style={{flex:1,height:110,objectFit:'cover',objectPosition:'center top',borderRadius:10,cursor:'pointer',border:i===photoIndex?'2px solid white':'2px solid transparent',transition:'border 0.2s'}} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* BOTTOM PADDING */}
+          <div style={{height:32}} />
+
+          {showReport && (
+            <div style={{position:'fixed',inset:0,zIndex:1001,background:'rgba(0,0,0,0.85)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+              <div style={{background:'#111',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,padding:28,width:'100%',maxWidth:360}}>
+                
+                {!reportSubmitted ? (
+                  <>
+                    <div style={{fontSize:18,fontWeight:600,color:'white',textAlign:'center',marginBottom:8}}>Report Profile</div>
+                    <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',textAlign:'center',marginBottom:24}}>Why are you reporting this profile?</div>
+                    
+                    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                      {['Fake profile','Inappropriate photos','Harassment','Spam'].map(reason => (
+                        <button
+                          key={reason}
+                          onClick={() => setReportReason(reason)}
+                          style={{
+                            padding:'12px 16px',
+                            borderRadius:12,
+                            border: reportReason===reason ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
+                            background: reportReason===reason ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+                            color: reportReason===reason ? 'white' : 'rgba(255,255,255,0.6)',
+                            fontSize:14,
+                            textAlign:'left',
+                            cursor:'pointer'
+                          }}
+                        >{reason}</button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        if (!reportReason || !currentUser || !otherProfile) return
+                        await supabase.from('reports').insert({
+                          reported_by: currentUser.id,
+                          reported_user: otherProfile.id,
+                          reason: reportReason
+                        })
+                        setReportSubmitted(true)
+                      }}
+                      disabled={!reportReason}
+                      style={{
+                        width:'100%',
+                        marginTop:20,
+                        padding:'14px',
+                        borderRadius:30,
+                        background: reportReason ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                        color:'white',
+                        fontSize:15,
+                        fontWeight:600,
+                        border:'none',
+                        cursor: reportReason ? 'pointer' : 'not-allowed',
+                        opacity: reportReason ? 1 : 0.5
+                      }}
+                    >Submit Report</button>
+
+                    <button
+                      onClick={() => { setShowReport(false); setReportReason(null); }}
+                      style={{width:'100%',marginTop:12,padding:'10px',background:'transparent',border:'none',color:'rgba(255,255,255,0.4)',fontSize:14,cursor:'pointer'}}
+                    >Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{textAlign:'center',padding:'20px 0'}}>
+                      <div style={{fontSize:32,marginBottom:12}}>✅</div>
+                      <div style={{fontSize:18,fontWeight:600,color:'white',marginBottom:8}}>Report Submitted</div>
+                      <div style={{fontSize:14,color:'rgba(255,255,255,0.5)',marginBottom:24}}>Thank you. We will review this profile.</div>
+                      <button
+                        onClick={() => { setShowReport(false); setShowProfile(false); setReportReason(null); setReportSubmitted(false); router.push('/matches'); }}
+                        style={{padding:'12px 28px',borderRadius:30,background:'#ef4444',color:'white',fontSize:14,fontWeight:600,border:'none',cursor:'pointer'}}
+                      >Back to matches</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
       <BottomNav />
     </div>
   )

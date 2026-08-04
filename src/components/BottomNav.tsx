@@ -3,7 +3,11 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { House, Heart, Plus, User } from 'lucide-react'
 
-export default function BottomNav() {
+interface BottomNavProps {
+  onPlusClick?: () => void
+}
+
+export default function BottomNav({ onPlusClick }: BottomNavProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -75,7 +79,13 @@ export default function BottomNav() {
 
       {/* 3. Center + Button */}
       <button
-        onClick={() => router.push('/profile/photos')}
+        onClick={() => {
+          if (onPlusClick) {
+            onPlusClick()
+          } else {
+            router.push('/profile/me?upload=true')
+          }
+        }}
         style={{
           width: '52px',
           height: '52px',
