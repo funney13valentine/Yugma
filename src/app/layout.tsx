@@ -16,6 +16,14 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
+      <head>
+
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#000000" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+      <meta name="apple-mobile-web-app-title" content="Yugma" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
